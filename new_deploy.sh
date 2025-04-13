@@ -3,7 +3,8 @@
 ###############################################################
 #  TITRE: 
 #
-#  AUTEUR:   Xavier
+#  AUTEUR:   Xavier 
+#  Modifieur: Nicolas
 #  VERSION: 
 #  CREATION:  
 #  MODIFIE: 
@@ -37,26 +38,34 @@ createContainers(){
   CONTAINER_HOME=/home/${CONTAINER_USER}
   CONTAINER_CMD="sudo podman exec "
 
-	# Calcul du id à utiliser
+  # Calcul du id à utiliser
   id_already=`sudo podman ps -a --format '{{ .Names}}' | awk -v user="${CONTAINER_USER}" '$1 ~ "^"user {count++} END {print count}'`
   id_min=$((id_already + 1))
   id_max=$((id_already + ${CONTAINER_NUMBER}))
   
-	# Création des conteneurs en boucle
-	for i in $(seq $id_min $id_max);do
-		sudo podman run -d --systemd=true --publish-all=true -v /srv/data:/srv/data --name ${CONTAINER_USER}-debian-$i -h ${CONTAINER_USER}-debian-$i docker.io/priximmo/buster-systemd-ssh
-		${CONTAINER_CMD} ${CONTAINER_USER}-debian-$i /bin/sh -c "useradd -m -p sa3tHJ3/KuYvI ${CONTAINER_USER}"
-		${CONTAINER_CMD} ${CONTAINER_USER}-debian-$i /bin/sh -c "mkdir -m 0700 ${CONTAINER_HOME}/.ssh && chown ${CONTAINER_USER}:${CONTAINER_USER} ${CONTAINER_HOME}/.ssh"
-		sudo podman cp ${HOME}/.ssh/id_rsa.pub ${CONTAINER_USER}-debian-$i:${CONTAINER_HOME}/.ssh/authorized_keys
-		${CONTAINER_CMD} ${CONTAINER_USER}-debian-$i /bin/sh -c "chmod 600 ${CONTAINER_HOME}/.ssh/authorized_keys && chown ${CONTAINER_USER}:${CONTAINER_USER} ${CONTAINER_HOME}/.ssh/authorized_keys"
-		${CONTAINER_CMD} ${CONTAINER_USER}-debian-$i /bin/sh -c "echo '${CONTAINER_USER}   ALL=(ALL) NOPASSWD: ALL'>>/etc/sudoers"
-		${CONTAINER_CMD} ${CONTAINER_USER}-debian-$i /bin/sh -c "service ssh start"
-	done
+  # Création des conteneurs en boucle
+  for i in $(seq $id_min $id_max); do
+    sudo podman run -d --systemd=true --publish-all=true -v /srv/data:/srv/data --name ${CONTAINER_USER}-debian-$i -h ${CONTAINER_USER}-debian-$i docker.io/priximmo/buster-systemd-ssh
 
-	infosContainers
+    # Création de l'utilisateur et préparation SSH
+    ${CONTAINER_CMD} ${CONTAINER_USER}-debian-$i /bin/sh -c "useradd -m -p sa3tHJ3/KuYvI ${CONTAINER_USER}"
+    ${CONTAINER_CMD} ${CONTAINER_USER}-debian-$i /bin/sh -c "mkdir -m 0700 ${CONTAINER_HOME}/.ssh && chown ${CONTAINER_USER}:${CONTAINER_USER} ${CONTAINER_HOME}/.ssh"
+    sudo podman cp ${HOME}/.ssh/id_rsa.pub ${CONTAINER_USER}-debian-$i:${CONTAINER_HOME}/.ssh/authorized_keys
+    ${CONTAINER_CMD} ${CONTAINER_USER}-debian-$i /bin/sh -c "chmod 600 ${CONTAINER_HOME}/.ssh/authorized_keys && chown ${CONTAINER_USER}:${CONTAINER_USER} ${CONTAINER_HOME}/.ssh/authorized_keys"
+    ${CONTAINER_CMD} ${CONTAINER_USER}-debian-$i /bin/sh -c "echo '${CONTAINER_USER}   ALL=(ALL) NOPASSWD: ALL'>>/etc/sudoers"
 
+    # 🔧 Nettoyage des dépôts obsolètes et ajout du bon dépôt
+    ${CONTAINER_CMD} ${CONTAINER_USER}-debian-$i /bin/sh -c "sed -i '/stretch-backports/d' /etc/apt/sources.list"
+    ${CONTAINER_CMD} ${CONTAINER_USER}-debian-$i /bin/sh -c 'grep -q "deb http://deb.debian.org/debian buster main" /etc/apt/sources.list || echo "deb http://deb.debian.org/debian buster main" >> /etc/apt/sources.list'
+
+    # Démarrer le service SSH
+    ${CONTAINER_CMD} ${CONTAINER_USER}-debian-$i /bin/sh -c "service ssh start"
+  done
+
+  infosContainers
   exit 0
 }
+
 
 infosContainers(){
 	echo ""

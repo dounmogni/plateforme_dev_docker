@@ -54,7 +54,12 @@ cd plateforme_dev_docker
 
 ---
 
-6. **Lancer le script**
+6- **Coté Serveur :- Installe Ansible**
+```bash
+sudo apt update
+sudo apt install ansible
+```
+7. **Lancer le script**
 
 ```bash
 ./new_deploy.sh

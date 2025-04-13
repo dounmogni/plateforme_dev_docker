@@ -116,9 +116,9 @@ while getopts ":c:ahitsd" options; do
 		a)
 			createAnsible
 			;;
-    c)
+                c)
 			createContainers ${OPTARG}
-      ;;
+                        ;;
 		i)
 			infosContainers
 			;;
@@ -131,14 +131,14 @@ while getopts ":c:ahitsd" options; do
 		d)
 			dropContainers
 			;;
-    h)
-      help
-      exit 1
-      ;;
-    *)
-      help
-      exit 1
-      ;;
+                h)
+                   help
+                   exit 1
+                        ;;
+                *)
+                   help
+                   exit 1
+                       ;;
   esac
 done
 
